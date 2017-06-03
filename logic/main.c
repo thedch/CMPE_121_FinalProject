@@ -18,6 +18,7 @@
 #include <wiringPi.h>
 
 #define MAX_INPUT 100
+#define BAUDRATE B115200 // UART speed
 
 int detectCommand(char* command);
 
@@ -72,8 +73,7 @@ int main () {
 	printf("Welcome to Daniel Hunter's Logic Analyzer!\n");
 	printf("Please enter any desired commands, or enter run to begin.\n");
 	
-	int commandCode = 0;
-	int i = 0;
+	int commandCode = 0;	
 	int channel[8][5000];
 	int prevChannelData = 0;
 	char s[3];
@@ -103,7 +103,11 @@ int main () {
 	//channel[0][5] = 1;
 	//channel[0][6] = 1;
 	
-	for (i = 0; i < 5000; i++) {
+	int i = 0;
+	int j = 0;
+	int doneFlag = 0;
+	int finalIndex = 0;
+	while(1) {
 		// Get a byte
 		do {
 			read_bytes = read(fd, &rxData, 1);
@@ -120,7 +124,19 @@ int main () {
 		channel[6][i] = (rxData & 0x02) ? 1 : 0;
 		channel[7][i] = (rxData & 0x01) ? 1 : 0;
 		
-		// if channel = trigger cond, break and store current index
+		i++; 
+		i = i % mem_depth; // walk through the array, rolling over at mem_depth
+		
+		if (channel[0][i] && channel[1][i]) { // Trigger condition checker
+			doneFlag = 1;
+		}			
+		if (doneFlag) {
+			j++;
+			if (j >= mem_depth/2) { // Save half of memory depth samples to display
+				finalIndex = i; // Save where we stopped to graph it later
+				break;
+			}
+		}
 	}
 	
 	while(1) {
