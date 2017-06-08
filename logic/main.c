@@ -26,10 +26,10 @@ int graphSetup(int width, int height, int xscale, int trigger_dir);
 
 int graphChannels(int channel[][5000], int finalIndex);
 
-int nchannels = 1;
+int nchannels = 8;
 int trigger_dir = 1; // 1 is positive, 0 is negative
-int mem_depth = 20;
-int xscale = 50;
+int mem_depth = 100;
+int xscale = 25;
 int yscale = 100;
 int channelOffset = 150;
 
@@ -130,12 +130,14 @@ int main () {
 			channel[6][i] = (mySignal.signal & 0x02) ? 1 : 0;
 			channel[7][i] = (mySignal.signal & 0x01) ? 1 : 0;
 			
-			i++;
-			i = i % mem_depth; // Walk through the array, rolling over at mem_depth
-		
 			if (channel[0][i] && channel[1][i] && channel[2][i] && channel[3][i] && channel[4][i] && channel[5][i] && channel[6][i] && channel[7][i]) { // Trigger condition checker
 				triggeredFlag = 1;
 			}
+			
+			i++;
+			i = i % mem_depth; // Walk through the array, rolling over at mem_depth
+		
+			
 			if (triggeredFlag) {
 				j++;
 				if (j >= mem_depth/2) { // Save half of memory depth samples to display
@@ -162,20 +164,27 @@ int graphChannels(int channel[][5000], int finalIndex) {
 	int curChan = 0;
 	int HPixel1 = 0;
 	while (curChan < nchannels) {
-		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
-			Line(HPixel1*xscale, channel[curChan][finalIndex + HPixel1]*yscale + channelOffset*curChan, HPixel1*xscale + xscale, channel[curChan][finalIndex + HPixel1]*yscale + channelOffset*curChan);
-			if (channel[curChan][HPixel1] != channel[curChan][HPixel1 - 1]) {
-				// A transition was made, add a vertical line
-				Line(HPixel1*xscale, channel[curChan][finalIndex + HPixel1]*yscale + channelOffset*curChan, HPixel1*xscale, channel[curChan][finalIndex + HPixel1-1]*yscale + channelOffset*curChan);
-			}
-		}
 		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
+		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
+			Line(HPixel1*xscale, 
+				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, 
+				HPixel1*xscale + xscale, 
+				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan);
+				
+			if (channel[curChan][finalIndex - mem_depth/2 + HPixel1] != channel[curChan][finalIndex - mem_depth/2 + HPixel1 - 1]) {
+				// A transition was made, add a vertical line
+				Line(HPixel1*xscale, 
+					channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, 
+					HPixel1*xscale, 
+					channel[curChan][finalIndex - mem_depth/2 + HPixel1-1]*yscale + channelOffset*curChan);
+			}
+		}		
 		curChan++;
 	}	
 	return 0;
 }
 
-graphSetup(width, height, xscale, trigger_dir) {
+int graphSetup(width, height, xscale, trigger_dir) {
 	int i;
 	char strToPrint[MAX_INPUT];	
 
@@ -191,13 +200,11 @@ graphSetup(width, height, xscale, trigger_dir) {
 	
 	for (i = 0; i < 1200; i = i + 150) {
 		Line(0, i, 1920, i);
-	}
-	
-	Stroke(255, 0, 0, 1); // Red line for graph
+	}	
 	return 0;
 }
 
-detectCommand(char* command) {	
+int detectCommand(char* command) {	
 	
 	if (strstr(command, "nchannels") != NULL) {
 		if (strstr(command, "1") != NULL) {
