@@ -24,7 +24,7 @@ int detectCommand(char* command);
 
 int graphSetup(int width, int height, int xscale, int trigger_dir);
 
-int graphChannels(int channel[][5000], int finalIndex);
+int graphChannels(int channel[][5000], int finalIndex, int potData);
 
 int nchannels = 8;
 int trigger_dir = 1; // 1 is positive, 0 is negative
@@ -35,8 +35,10 @@ int channelOffset = 150;
 
 struct signal {
 	int signal;	// 8 bit number consisting of the 8 channels combined into a number
-	int potData; // pot data fed into 8 bit ADC
+	uint8_t potData; // pot data fed into 8 bit ADC
 };
+
+struct signal mySignal;
 
 int main () {
 	
@@ -79,8 +81,7 @@ int main () {
 	int prevChannelData = 0;
 	char s[3];
 	char inputFromUser[MAX_INPUT];
-	struct signal mySignal;
-	
+		
 	int k;
 	int rcount = 0;
 	//for (k = 0; k < 1000; k++) {
@@ -117,6 +118,7 @@ int main () {
 			rcount += read_bytes;
 		}
 		rcount = 0;
+		// channelOffset = 150 + mySignal.potData;
 		
 		if (!doneFlag) {					
 			// Store the byte as bits
@@ -147,24 +149,25 @@ int main () {
 			}
 		} else { // The analyzer has been triggered and the data is saved in the array, graph it based on potData
 			graphSetup(width, height, xscale, trigger_dir);
-			graphChannels(channel, finalIndex);
+			graphChannels(channel, finalIndex, mySignal.potData);
 			End();
 		}
 	}
-	
+
 	fgets(s, 2, stdin); // look at the pic, end with [RETURN]
 	finish(); // Graphics cleanup
 	exit(0);
-	
+
 }
 
 // gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
 
-int graphChannels(int channel[][5000], int finalIndex) {
+int graphChannels(int channel[][5000], int finalIndex, int potData) {
 	int curChan = 0;
 	int HPixel1 = 0;
-	while (curChan < nchannels) {
+	while (curChan < nchannels) {	
 		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
+		// Stroke(potData, potData, potData, 1);
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
 			Line(HPixel1*xscale, 
 				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, 
