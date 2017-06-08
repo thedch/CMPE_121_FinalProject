@@ -34,7 +34,7 @@ int yscale = 100;
 int channelOffset = 150;
 
 struct signal {
-	int signal;	// 8 bit number consisting of the 8 channels combined into a number
+	uint8_t signal; // 8 bit number consisting of the 8 channels combined into a number
 	uint8_t potData; // pot data fed into 8 bit ADC
 };
 
@@ -46,8 +46,7 @@ int main () {
 	struct termios serial; // Structure to contain UART parameters
 	
 	char* dev_id = "/dev/serial0"; // UART device identifier        
-    int read_bytes = 0;
-    int HPixel1 = 0;
+    int read_bytes = 0;    
     
     printf("Opening %s\n", dev_id);
     int fd = open(dev_id, O_RDWR | O_NOCTTY | O_NDELAY);
@@ -55,8 +54,8 @@ int main () {
     if (fd == -1) { // Open failed
         perror(dev_id);
         return -1;
-    }	
-
+    }
+    
     // Get UART configuration
     if (tcgetattr(fd, &serial) < 0) {
         perror("Getting configuration");
