@@ -79,16 +79,17 @@ int main () {
 	char s[3];
 	char inputFromUser[MAX_INPUT];
 		
-	int k;
-	int rcount = 0;
-	for (k = 0; k < 1000; k++) {
-		while (rcount < sizeof(mySignal)) {
-			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
-			rcount += read_bytes;
-		}
-		rcount = 0;
-		printf("%d, %d\n", mySignal.signal, mySignal.potData);		
-	}
+	// mySignal.potData = 1;
+	//int k;
+	//int rcount = 0;
+	//for (k = 0; k < 1000; k++) {
+		//while (rcount < sizeof(mySignal)) {
+			//read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+			//rcount += read_bytes;
+		//}
+		//rcount = 0;
+		//printf("%d, %d\n", mySignal.signal, mySignal.potData);		
+	//}
 	
 	printf("Welcome to Daniel Hunter's Logic Analyzer!\n");
 	printf("Please enter any desired commands, or enter run to begin.\n");
@@ -132,11 +133,10 @@ int main () {
 				&& channel[4][i] && channel[5][i] && channel[6][i] && channel[7][i]) { // Trigger condition checker
 				triggeredFlag = 1;
 			}
-			
+
 			i++;
 			i = i % mem_depth; // Walk through the array, rolling over at mem_depth
-		
-			
+
 			if (triggeredFlag) {
 				j++;
 				if (j >= mem_depth/2) { // Save half of memory depth samples to display
@@ -162,24 +162,24 @@ int main () {
 int graphChannels(int channel[][5000], int finalIndex) {
 	int curChan = 0;
 	int HPixel1 = 0;
-	while (curChan < nchannels) {	
+	while (curChan < nchannels) {
 		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
 		// potData = 255;
 		// Stroke(potData, 0, 0, 1);
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
-			Line(HPixel1*xscale, 
-				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, 
-				HPixel1*xscale + xscale, 
+			Line(HPixel1*xscale,
+				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan,
+				HPixel1*xscale + xscale,
 				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan);
 				
 			if (channel[curChan][finalIndex - mem_depth/2 + HPixel1] != channel[curChan][finalIndex - mem_depth/2 + HPixel1 - 1]) {
 				// A transition was made, add a vertical line
-				Line(HPixel1*xscale, 
-					channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, 
-					HPixel1*xscale, 
+				Line(HPixel1*xscale,
+					channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan,
+					HPixel1*xscale,
 					channel[curChan][finalIndex - mem_depth/2 + HPixel1-1]*yscale + channelOffset*curChan);
 			}
-		}		
+		}
 		curChan++;
 	}	
 	return 0;
