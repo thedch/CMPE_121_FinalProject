@@ -24,11 +24,11 @@ int detectCommand(char* command);
 
 int graphSetup(int width, int height, int xscale, int trigger_dir);
 
-int graphChannels(int channel[][5000]);
+int graphChannels(int channel[][5000], int finalIndex);
 
 int nchannels = 1;
 int trigger_dir = 1; // 1 is positive, 0 is negative
-int mem_depth = 5000;
+int mem_depth = 20;
 int xscale = 50;
 int yscale = 100;
 int channelOffset = 150;
@@ -88,6 +88,7 @@ int main () {
 			//read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
 			//rcount += read_bytes;
 		//}
+		//rcount = 0;
 		//printf("%d, %d\n", mySignal.signal, mySignal.potData);		
 	//}
 	
@@ -107,7 +108,7 @@ int main () {
 	int doneFlag = 0;
 	int triggeredFlag = 0;
 	int finalIndex = 0;
-	int rcount = 0;
+	// int rcount = 0;
 	
 	while(1) {
 		// Recieve the struct
@@ -130,9 +131,9 @@ int main () {
 			channel[7][i] = (mySignal.signal & 0x01) ? 1 : 0;
 			
 			i++;
-			i = i % mem_depth; // walk through the array, rolling over at mem_depth
+			i = i % mem_depth; // Walk through the array, rolling over at mem_depth
 		
-			if (channel[0][i] && channel[1][i]) { // Trigger condition checker
+			if (channel[0][i] && channel[1][i] && channel[2][i] && channel[3][i] && channel[4][i] && channel[5][i] && channel[6][i] && channel[7][i]) { // Trigger condition checker
 				triggeredFlag = 1;
 			}
 			if (triggeredFlag) {
@@ -144,7 +145,7 @@ int main () {
 			}
 		} else { // The analyzer has been triggered and the data is saved in the array, graph it based on potData
 			graphSetup(width, height, xscale, trigger_dir);
-			graphChannels(channel);
+			graphChannels(channel, finalIndex);
 			End();
 		}
 	}
@@ -157,15 +158,15 @@ int main () {
 
 // gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
 
-graphChannels(int channel[][5000]) {
+int graphChannels(int channel[][5000], int finalIndex) {
 	int curChan = 0;
 	int HPixel1 = 0;
-	while (curChan < nchannels) {		
+	while (curChan < nchannels) {
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
-			Line(HPixel1*xscale, channel[curChan][HPixel1]*yscale + channelOffset*curChan, HPixel1*xscale + xscale, channel[curChan][HPixel1]*yscale + channelOffset*curChan);
+			Line(HPixel1*xscale, channel[curChan][finalIndex + HPixel1]*yscale + channelOffset*curChan, HPixel1*xscale + xscale, channel[curChan][finalIndex + HPixel1]*yscale + channelOffset*curChan);
 			if (channel[curChan][HPixel1] != channel[curChan][HPixel1 - 1]) {
 				// A transition was made, add a vertical line
-				Line(HPixel1*xscale, channel[curChan][HPixel1]*yscale + channelOffset*curChan, HPixel1*xscale, channel[curChan][HPixel1-1]*yscale + channelOffset*curChan);
+				Line(HPixel1*xscale, channel[curChan][finalIndex + HPixel1]*yscale + channelOffset*curChan, HPixel1*xscale, channel[curChan][finalIndex + HPixel1-1]*yscale + channelOffset*curChan);
 			}
 		}
 		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
