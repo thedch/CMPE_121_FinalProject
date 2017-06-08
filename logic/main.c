@@ -74,8 +74,7 @@ int main () {
 
     // Set the parameters by writing the configuration
     tcsetattr(fd, TCSANOW, &serial); 	
-	
-	int commandCode = 0;	
+		
 	int channel[8][5000];
 	int prevChannelData = 0;
 	char s[3];
@@ -96,9 +95,8 @@ int main () {
 	printf("Please enter any desired commands, or enter run to begin.\n");
 	
 	do {
-		fgets(inputFromUser, MAX_INPUT - 1, stdin);
-		commandCode = detectCommand(inputFromUser);
-	} while (commandCode != 7);
+		fgets(inputFromUser, MAX_INPUT - 1, stdin);	
+	} while (detectCommand(inputFromUser) != 7);
 	
 	int width, height;
 	init(&width, &height);
