@@ -33,14 +33,18 @@ int xscale = 50;
 int yscale = 100;
 int channelOffset = 150;
 
+struct signal {
+	int signal;	// 8 bit number consisting of the 8 channels combined into a number
+	int potData; // pot data fed into 8 bit ADC
+};
+
 int main () {
 	
 	// UART set up
 	struct termios serial; // Structure to contain UART parameters
 	
-	char* dev_id = "/dev/serial0"; // UART device identifier    
-    uint8_t rxData = 0; // Receive data    
-    int read_bytes = 0;    
+	char* dev_id = "/dev/serial0"; // UART device identifier        
+    int read_bytes = 0;
     int HPixel1 = 0;
     
     printf("Opening %s\n", dev_id);
@@ -49,7 +53,7 @@ int main () {
     if (fd == -1) { // Open failed
         perror(dev_id);
         return -1;
-    }
+    }	
 
     // Get UART configuration
     if (tcgetattr(fd, &serial) < 0) {
@@ -70,14 +74,27 @@ int main () {
     // Set the parameters by writing the configuration
     tcsetattr(fd, TCSANOW, &serial); 
 	
-	printf("Welcome to Daniel Hunter's Logic Analyzer!\n");
-	printf("Please enter any desired commands, or enter run to begin.\n");
+
 	
 	int commandCode = 0;	
 	int channel[8][5000];
 	int prevChannelData = 0;
 	char s[3];
 	char inputFromUser[MAX_INPUT];
+	struct signal mySignal;
+	
+	int k;
+	int rcount = 0;
+	for (k = 0; k < 1000; k++) {
+		while (rcount < sizeof(mySignal)) {	
+			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+			rcount += read_bytes;
+		}
+		printf("%d, %d\n", mySignal.signal, mySignal.potData);		
+	}
+	
+	printf("Welcome to Daniel Hunter's Logic Analyzer!\n");
+	printf("Please enter any desired commands, or enter run to begin.\n");
 	
 	do {
 		fgets(inputFromUser, MAX_INPUT - 1, stdin);
@@ -86,22 +103,6 @@ int main () {
 	
 	int width, height;
 	init(&width, &height);
-	wiringPiSetup();
-	pinMode(0, INPUT);
-	
-	//for (i = 0; i < 5000; i++) {
-		//channel[0][i] = i%2;
-		//channel[1][i] = i%2;
-		//channel[2][i] = i%2;
-	//}
-	
-	//channel[0][0] = 0;
-	//channel[0][1] = 0;
-	//channel[0][2] = 0;
-	//channel[0][3] = 1;
-	//channel[0][4] = 1;
-	//channel[0][5] = 1;
-	//channel[0][6] = 1;
 	
 	int i = 0;
 	int j = 0;
@@ -110,19 +111,19 @@ int main () {
 	while(1) {
 		// Get a byte
 		do {
-			read_bytes = read(fd, &rxData, 1);
+			// read_bytes = read(fd, &rxData, 1);
 		} while (read_bytes < 1);
 		
 		// Store the byte as bits
-		channel[0][i] = (rxData & 0x80) ? 1 : 0; // [0] is MSB. so compare to 1000 0000
-		channel[1][i] = (rxData & 0x40) ? 1 : 0;
-		channel[2][i] = (rxData & 0x20) ? 1 : 0;
-		channel[3][i] = (rxData & 0x10) ? 1 : 0;
+		// channel[0][i] = (rxData & 0x80) ? 1 : 0; // [0] is MSB. so compare to 1000 0000
+		//channel[1][i] = (rxData & 0x40) ? 1 : 0;
+		//channel[2][i] = (rxData & 0x20) ? 1 : 0;
+		//channel[3][i] = (rxData & 0x10) ? 1 : 0;
 		
-		channel[4][i] = (rxData & 0x08) ? 1 : 0;
-		channel[5][i] = (rxData & 0x04) ? 1 : 0;
-		channel[6][i] = (rxData & 0x02) ? 1 : 0;
-		channel[7][i] = (rxData & 0x01) ? 1 : 0;
+		//channel[4][i] = (rxData & 0x08) ? 1 : 0;
+		//channel[5][i] = (rxData & 0x04) ? 1 : 0;
+		//channel[6][i] = (rxData & 0x02) ? 1 : 0;
+		//channel[7][i] = (rxData & 0x01) ? 1 : 0;
 		
 		i++; 
 		i = i % mem_depth; // walk through the array, rolling over at mem_depth
@@ -152,7 +153,7 @@ int main () {
 	
 }
 
-// gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes -lwiringPi
+// gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
 
 graphChannels(int channel[][5000]) {
 	int curChan = 0;
