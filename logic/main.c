@@ -80,15 +80,15 @@ int main () {
 	char inputFromUser[MAX_INPUT];
 	int rcount = 0;
 		
-	// mySignal.potData = 1;
-	//int k;	
+	 mySignal.potData = 1;
+	int k;	
 	//for (k = 0; k < 1000; k++) {
 		//while (rcount < sizeof(mySignal)) {
 			//read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
 			//rcount += read_bytes;
 		//}
 		//rcount = 0;
-		//printf("%d, %d\n", mySignal.signal, mySignal.potData);		
+		//printf("%d, %d\n", mySignal.signal, mySignal.potData);
 	//}
 	
 	printf("Welcome to Daniel Hunter's Logic Analyzer!\n");
@@ -105,7 +105,8 @@ int main () {
 	int j = 0;
 	int doneFlag = 0;
 	int triggeredFlag = 0;
-	int finalIndex = 0;	
+	int finalIndex = 0;
+	int master_data_counter = 0;
 	
 	while(1) {
 		// Receive the struct
@@ -114,6 +115,7 @@ int main () {
 			rcount += read_bytes;
 		}
 		rcount = 0;
+		master_data_counter++;
 		
 		if (!doneFlag) {				
 			// Store the byte as bits
@@ -143,9 +145,12 @@ int main () {
 				}
 			}
 		} else { // The analyzer has been triggered and the data is saved in the array, graph it based on potData
-			graphSetup(width, height, xscale, trigger_dir);
-			graphChannels(channel, finalIndex);
-			End();
+			if (master_data_counter > 200) {	
+				graphSetup(width, height, xscale, trigger_dir);
+				graphChannels(channel, finalIndex);
+				End();
+				master_data_counter = 0;
+			}
 		}
 	}
 
@@ -157,13 +162,19 @@ int main () {
 // gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
 
 int graphChannels(int channel[][5000], int finalIndex) {
+	static int testOffset = 0;
 	int curChan = 0;
 	int HPixel1 = 0;
 	while (curChan < nchannels) {
 		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
 		// potData = 255;
 		// Stroke(potData, 0, 0, 1);
-		channelOffset = 150 + mySignal.potData;
+		// testOffset++;
+		channelOffset = 150 + mySignal.potData + testOffset;
+		char test[10];
+		sprintf(test, "%d", channelOffset);
+		Fill(255, 255, 255, 1);	
+		TextMid(100, 100, test, SerifTypeface, 50);
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
 			Line(HPixel1*xscale,
 				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan,
