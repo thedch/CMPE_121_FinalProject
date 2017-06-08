@@ -53,6 +53,15 @@ int trigger_channel = 1;
 
 #define BAUDRATE B115200 // UART speed
 
+struct signal {
+	uint8_t signal1;
+	uint8_t signal2;
+	uint8_t potData; // pot data fed into 8 bit ADC
+};
+
+struct signal mySignal;
+struct signal myOldSignal;
+
 int main () {
 
 	// UART set up
@@ -95,9 +104,9 @@ int main () {
 	// Begin taking user input
 	char s[3];
 	int commandCode = 0;
-	int signalOneOffset = 500;
-	int channelSelect = 0;
+	int signalOneOffset = 500;	
 	char inputFromUser[MAX_INPUT];
+	int rcount = 0;
 
 	printf("Welcome to Daniel Hunter's O'Scope!\n");
 	printf("Please enter any desired commands, or enter start to begin.\n");
@@ -120,26 +129,35 @@ int main () {
 
 	while (1) {
 		graphSetup(width, height, xscale, yscale, trigger_channel, trigger_slope, trigger_level, mode, nchannels);
-		for (HPixel1 = 0; HPixel1 < 1920; HPixel1 = HPixel1 + xscale * 5) {
+		for (HPixel1 = 0; HPixel1 < 1920; HPixel1 = HPixel1 + xscale * 5) { // HPixel1 * xscale < 1920?
 
 			// Walk across the screen, reading bytes and drawing data
-			do {
-				read_bytes = read(fd, &rxData, 1);
-			} while (read_bytes < 1);
-
-			// Select which channel to use
-			if (nchannels == 2 && channelSelect || nchannels == 1) {
-				// Draw the first channel
-				Line(HPixel1, prevRxData + signalOneOffset, HPixel1 + xscale * 5, rxData + signalOneOffset);
-				channelSelect = 0;
-			} else if (nchannels == 2 && !channelSelect) {
-				// Draw the second channel
-				Line(HPixel1, prevRxData + signalOneOffset, HPixel1 + xscale * 5, rxData + signalOneOffset);
-				channelSelect = 1;
+			while (rcount < sizeof(mySignal)) {
+				read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+				rcount += read_bytes;
 			}
-
-			prevRxData = rxData;
-
+			rcount = 0;
+			
+			// Draw the first channel
+			Line(HPixel1, 
+				myOldSignal.signal1 + signalOneOffset, 
+				HPixel1 + xscale * 5, 
+				mySignal.signal1 + signalOneOffset);
+			
+			if (nchannels == 2) {
+				// Draw the second channel
+				Stroke(0, 255, 0, 1); // Green line for second graph
+				
+				Line(HPixel1, 
+					myOldSignal.signal2 + signalOneOffset, 
+					HPixel1 + xscale * 5, 
+					mySignal.signal2 + signalOneOffset);
+					
+				Stroke(255, 0, 0, 1); // Red line for graph
+			}
+			// prevRxData = rxData;
+			myOldSignal.signal1 = mySignal.signal1;
+			myOldSignal.signal2 = mySignal.signal2;
 		}
 		End(); // End the picture
 	}
@@ -204,7 +222,6 @@ graphSetup(width, height, xscale, yscale, trigger_channel, trigger_slope, trigge
 	Stroke(255, 0, 0, 1); // Red line for graph
 
 	return 0;
-
 }
 
 int detectCommand(char* command) {

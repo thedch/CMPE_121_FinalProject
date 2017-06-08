@@ -113,7 +113,7 @@ int main () {
 			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
 			rcount += read_bytes;
 		}
-		rcount = 0;		
+		rcount = 0;
 		
 		if (!doneFlag) {				
 			// Store the byte as bits
