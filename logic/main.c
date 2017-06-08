@@ -72,9 +72,7 @@ int main () {
     serial.c_cc[VTIME] = 0; // 0 for Nonblocking mode
 
     // Set the parameters by writing the configuration
-    tcsetattr(fd, TCSANOW, &serial); 
-	
-
+    tcsetattr(fd, TCSANOW, &serial); 	
 	
 	int commandCode = 0;	
 	int channel[8][5000];
@@ -85,13 +83,13 @@ int main () {
 	
 	int k;
 	int rcount = 0;
-	for (k = 0; k < 1000; k++) {
-		while (rcount < sizeof(mySignal)) {	
-			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
-			rcount += read_bytes;
-		}
-		printf("%d, %d\n", mySignal.signal, mySignal.potData);		
-	}
+	//for (k = 0; k < 1000; k++) {
+		//while (rcount < sizeof(mySignal)) {
+			//read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+			//rcount += read_bytes;
+		//}
+		//printf("%d, %d\n", mySignal.signal, mySignal.potData);		
+	//}
 	
 	printf("Welcome to Daniel Hunter's Logic Analyzer!\n");
 	printf("Please enter any desired commands, or enter run to begin.\n");
@@ -107,44 +105,48 @@ int main () {
 	int i = 0;
 	int j = 0;
 	int doneFlag = 0;
+	int triggeredFlag = 0;
 	int finalIndex = 0;
-	while(1) {
-		// Get a byte
-		do {
-			// read_bytes = read(fd, &rxData, 1);
-		} while (read_bytes < 1);
-		
-		// Store the byte as bits
-		// channel[0][i] = (rxData & 0x80) ? 1 : 0; // [0] is MSB. so compare to 1000 0000
-		//channel[1][i] = (rxData & 0x40) ? 1 : 0;
-		//channel[2][i] = (rxData & 0x20) ? 1 : 0;
-		//channel[3][i] = (rxData & 0x10) ? 1 : 0;
-		
-		//channel[4][i] = (rxData & 0x08) ? 1 : 0;
-		//channel[5][i] = (rxData & 0x04) ? 1 : 0;
-		//channel[6][i] = (rxData & 0x02) ? 1 : 0;
-		//channel[7][i] = (rxData & 0x01) ? 1 : 0;
-		
-		i++; 
-		i = i % mem_depth; // walk through the array, rolling over at mem_depth
-		
-		if (channel[0][i] && channel[1][i]) { // Trigger condition checker
-			doneFlag = 1;
-		}			
-		if (doneFlag) {
-			j++;
-			if (j >= mem_depth/2) { // Save half of memory depth samples to display
-				finalIndex = i; // Save where we stopped to graph it later
-				break;
-			}
-		}
-	}
+	int rcount = 0;
 	
 	while(1) {
-		// Set up the graph
-		graphSetup(width, height, xscale, trigger_dir);
-		graphChannels(channel);		
-		End();
+		// Recieve the struct
+		while (rcount < sizeof(mySignal)) {
+			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+			rcount += read_bytes;
+		}
+		rcount = 0;
+		
+		if (!doneFlag) {					
+			// Store the byte as bits
+			channel[0][i] = (mySignal.signal & 0x80) ? 1 : 0; // [0] is MSB. so compare to 1000 0000
+			channel[1][i] = (mySignal.signal & 0x40) ? 1 : 0;
+			channel[2][i] = (mySignal.signal & 0x20) ? 1 : 0;
+			channel[3][i] = (mySignal.signal & 0x10) ? 1 : 0;
+
+			channel[4][i] = (mySignal.signal & 0x08) ? 1 : 0;
+			channel[5][i] = (mySignal.signal & 0x04) ? 1 : 0;
+			channel[6][i] = (mySignal.signal & 0x02) ? 1 : 0;
+			channel[7][i] = (mySignal.signal & 0x01) ? 1 : 0;
+			
+			i++;
+			i = i % mem_depth; // walk through the array, rolling over at mem_depth
+		
+			if (channel[0][i] && channel[1][i]) { // Trigger condition checker
+				triggeredFlag = 1;
+			}
+			if (triggeredFlag) {
+				j++;
+				if (j >= mem_depth/2) { // Save half of memory depth samples to display
+					finalIndex = i; // Save where we stopped to graph it later
+					doneFlag = 1;
+				}
+			}
+		} else { // The analyzer has been triggered and the data is saved in the array, graph it based on potData
+			graphSetup(width, height, xscale, trigger_dir);
+			graphChannels(channel);
+			End();
+		}
 	}
 	
 	fgets(s, 2, stdin); // look at the pic, end with [RETURN]
