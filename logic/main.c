@@ -76,7 +76,6 @@ int main () {
     tcsetattr(fd, TCSANOW, &serial); 	
 		
 	int channel[8][5000];
-	int prevChannelData = 0;
 	char s[3];
 	char inputFromUser[MAX_INPUT];
 		
@@ -109,7 +108,7 @@ int main () {
 	// int rcount = 0;
 	
 	while(1) {
-		// Recieve the struct
+		// Receive the struct
 		while (rcount < sizeof(mySignal)) {
 			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
 			rcount += read_bytes;
@@ -129,7 +128,8 @@ int main () {
 			channel[6][i] = (mySignal.signal & 0x02) ? 1 : 0;
 			channel[7][i] = (mySignal.signal & 0x01) ? 1 : 0;
 			
-			if (channel[0][i] && channel[1][i] && channel[2][i] && channel[3][i] && channel[4][i] && channel[5][i] && channel[6][i] && channel[7][i]) { // Trigger condition checker
+			if (channel[0][i] && channel[1][i] && channel[2][i] && channel[3][i] 
+				&& channel[4][i] && channel[5][i] && channel[6][i] && channel[7][i]) { // Trigger condition checker
 				triggeredFlag = 1;
 			}
 			
