@@ -78,10 +78,10 @@ int main () {
 	int channel[8][5000];
 	char s[3];
 	char inputFromUser[MAX_INPUT];
+	int rcount = 0;
 		
 	// mySignal.potData = 1;
-	//int k;
-	//int rcount = 0;
+	//int k;	
 	//for (k = 0; k < 1000; k++) {
 		//while (rcount < sizeof(mySignal)) {
 			//read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
@@ -105,8 +105,7 @@ int main () {
 	int j = 0;
 	int doneFlag = 0;
 	int triggeredFlag = 0;
-	int finalIndex = 0;
-	// int rcount = 0;
+	int finalIndex = 0;	
 	
 	while(1) {
 		// Receive the struct
@@ -114,10 +113,9 @@ int main () {
 			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
 			rcount += read_bytes;
 		}
-		rcount = 0;
-		// channelOffset = 150 + mySignal.potData;
+		rcount = 0;		
 		
-		if (!doneFlag) {					
+		if (!doneFlag) {				
 			// Store the byte as bits
 			channel[0][i] = (mySignal.signal & 0x80) ? 1 : 0; // [0] is MSB. so compare to 1000 0000
 			channel[1][i] = (mySignal.signal & 0x40) ? 1 : 0;
@@ -154,7 +152,6 @@ int main () {
 	fgets(s, 2, stdin); // look at the pic, end with [RETURN]
 	finish(); // Graphics cleanup
 	exit(0);
-
 }
 
 // gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
@@ -166,6 +163,7 @@ int graphChannels(int channel[][5000], int finalIndex) {
 		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
 		// potData = 255;
 		// Stroke(potData, 0, 0, 1);
+		channelOffset = 150 + mySignal.potData;
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
 			Line(HPixel1*xscale,
 				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan,
@@ -181,7 +179,7 @@ int graphChannels(int channel[][5000], int finalIndex) {
 			}
 		}
 		curChan++;
-	}	
+	}
 	return 0;
 }
 
