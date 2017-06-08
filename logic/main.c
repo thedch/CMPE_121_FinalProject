@@ -24,7 +24,7 @@ int detectCommand(char* command);
 
 int graphSetup(int width, int height, int xscale, int trigger_dir);
 
-int graphChannels(int channel[][5000], int finalIndex, int potData);
+int graphChannels(int channel[][5000], int finalIndex);
 
 int nchannels = 8;
 int trigger_dir = 1; // 1 is positive, 0 is negative
@@ -84,14 +84,14 @@ int main () {
 		
 	int k;
 	int rcount = 0;
-	//for (k = 0; k < 1000; k++) {
-		//while (rcount < sizeof(mySignal)) {
-			//read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
-			//rcount += read_bytes;
-		//}
-		//rcount = 0;
-		//printf("%d, %d\n", mySignal.signal, mySignal.potData);		
-	//}
+	for (k = 0; k < 1000; k++) {
+		while (rcount < sizeof(mySignal)) {
+			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+			rcount += read_bytes;
+		}
+		rcount = 0;
+		printf("%d, %d\n", mySignal.signal, mySignal.potData);		
+	}
 	
 	printf("Welcome to Daniel Hunter's Logic Analyzer!\n");
 	printf("Please enter any desired commands, or enter run to begin.\n");
@@ -149,7 +149,7 @@ int main () {
 			}
 		} else { // The analyzer has been triggered and the data is saved in the array, graph it based on potData
 			graphSetup(width, height, xscale, trigger_dir);
-			graphChannels(channel, finalIndex, mySignal.potData);
+			graphChannels(channel, finalIndex);
 			End();
 		}
 	}
@@ -162,12 +162,13 @@ int main () {
 
 // gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
 
-int graphChannels(int channel[][5000], int finalIndex, int potData) {
+int graphChannels(int channel[][5000], int finalIndex) {
 	int curChan = 0;
 	int HPixel1 = 0;
 	while (curChan < nchannels) {	
 		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
-		// Stroke(potData, potData, potData, 1);
+		// potData = 255;
+		// Stroke(potData, 0, 0, 1);
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
 			Line(HPixel1*xscale, 
 				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, 
@@ -191,7 +192,7 @@ int graphSetup(width, height, xscale, trigger_dir) {
 	int i;
 	char strToPrint[MAX_INPUT];	
 
-	Start(width, height); // Start the picture
+	Start(width, height);
 	Background(0, 0, 0); // Black background
 	
 	Stroke(255, 255, 255, .5);
