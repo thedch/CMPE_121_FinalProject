@@ -115,7 +115,7 @@ int main () {
 			rcount += read_bytes;
 		}
 		rcount = 0;
-		master_data_counter++;
+		master_data_counter++;	
 		
 		if (!doneFlag) {				
 			// Store the byte as bits
@@ -129,8 +129,7 @@ int main () {
 			channel[6][i] = (mySignal.signal & 0x02) ? 1 : 0;
 			channel[7][i] = (mySignal.signal & 0x01) ? 1 : 0;
 			
-			if (channel[0][i] && channel[1][i] && channel[2][i] && channel[3][i] 
-				&& channel[4][i] && channel[5][i] && channel[6][i] && channel[7][i]) { // Trigger condition checker
+			if (channel[0][i]) { // Trigger condition checker
 				triggeredFlag = 1;
 			}
 
@@ -161,18 +160,18 @@ int main () {
 
 // gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
 
-int graphChannels(int channel[][5000], int finalIndex) {	
+int graphChannels(int channel[][5000], int finalIndex) {
 	int curChan = 0;
 	int HPixel1 = 0;
 	while (curChan < nchannels) {
-		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);		
-		channelOffset = 150;		
+		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
+		channelOffset = 150;
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
 			Line(HPixel1*xscale, // X1
 				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, // Y1
 				HPixel1*xscale + xscale, // X2
 				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan); // Y2
-				
+
 			if (channel[curChan][finalIndex - mem_depth/2 + HPixel1] != channel[curChan][finalIndex - mem_depth/2 + HPixel1 - 1]) {
 				// A transition was made, add a vertical line
 				Line(HPixel1*xscale,
@@ -191,6 +190,9 @@ int graphChannels(int channel[][5000], int finalIndex) {
 int graphSetup(width, height, xscale, trigger_dir) {
 	int i;
 	char strToPrint[MAX_INPUT];	
+	int textHeight = 10;
+	int textSize = 20;
+	int textOffset = 120;
 
 	Start(width, height);
 	Background(0, 0, 0); // Black background
@@ -204,7 +206,32 @@ int graphSetup(width, height, xscale, trigger_dir) {
 	
 	for (i = 0; i < 1200; i = i + 150) {
 		Line(0, i, 1920, i);
-	}	
+	}
+	
+	Fill(255, 255, 255, 1); // Set the fill to be fully white for the text
+	sprintf(strToPrint, "Channel 1", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);	
+	textHeight = 125;
+	sprintf(strToPrint, "Channel 2", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight = 275;
+	sprintf(strToPrint, "Channel 3", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 4", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 5", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 6", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 7", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 8", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
 	return 0;
 }
 
