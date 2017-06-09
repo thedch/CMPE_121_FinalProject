@@ -45,11 +45,12 @@ int graphSetup(int width, int height, int xscale, int yscale, int trigger_channe
 
 int nchannels = 1;
 int mode = 1; // 1 is free_run, 2 is trigger
-int xscale = 1;
-int yscale = 1;
+int xscale = 50;
+int yscale = 2;
 int trigger_level = 1;
 int trigger_slope = 1;
 int trigger_channel = 1;
+int graphPotData = 1;
 
 #define BAUDRATE B115200 // UART speed
 
@@ -129,28 +130,28 @@ int main () {
 
 	while (1) {
 		graphSetup(width, height, xscale, yscale, trigger_channel, trigger_slope, trigger_level, mode, nchannels);
-		for (HPixel1 = 0; HPixel1 < 1920; HPixel1 = HPixel1 + xscale * 5) { // HPixel1 * xscale < 1920?			
+		for (HPixel1 = 0; HPixel1 < 1920; HPixel1 = HPixel1 + xscale) { // HPixel1 * xscale < 1920?
 			// Walk across the screen, reading bytes and drawing data
 			while (rcount < sizeof(mySignal)) {
 				read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
 				rcount += read_bytes;
 			}
-			rcount = 0;			
+			rcount = 0;
 			
 			// Draw the first channel
-			Line(HPixel1, 
-				myOldSignal.signal1 + signalOneOffset, 
-				HPixel1 + xscale * 5, 
-				mySignal.signal1 + signalOneOffset);
+			Line(HPixel1,
+				myOldSignal.signal1 + 100,
+				HPixel1 + xscale,
+				(mySignal.signal1 + 100));
 			
 			if (nchannels == 2) {
 				// Draw the second channel
 				Stroke(0, 255, 0, 1); // Green line for second graph
 				
-				Line(HPixel1, 
-					myOldSignal.signal2 + signalOneOffset + 100, 
-					HPixel1 + xscale * 5, 
-					mySignal.signal2 + signalOneOffset + 100);
+				Line(HPixel1,
+					myOldSignal.signal2 + signalOneOffset + graphPotData,
+					HPixel1 + xscale,
+					(mySignal.signal2 + signalOneOffset + graphPotData));
 					
 				Stroke(255, 0, 0, 1); // Red line for graph
 			}
@@ -158,6 +159,7 @@ int main () {
 			myOldSignal.signal1 = mySignal.signal1;
 			myOldSignal.signal2 = mySignal.signal2;
 		}
+		graphPotData = mySignal.potData;
 		End(); // End the picture
 	}
 
@@ -314,6 +316,9 @@ int detectCommand(char* command) {
 		} else if (strstr(command, "10") != NULL) {
 			printf("Set xscale to 10\n");
 			xscale = 10;
+		} else if (strstr(command, "5") != NULL) {
+			printf("Set xscale to 5\n");
+			xscale = 5;
 		} else if (strstr(command, "1") != NULL) {
 			printf("Set xscale to 1\n");
 			xscale = 1;
