@@ -28,8 +28,8 @@ int graphChannels(int channel[][5000], int finalIndex);
 
 int nchannels = 8;
 int trigger_dir = 1; // 1 is positive, 0 is negative
-int mem_depth = 100;
-int xscale = 25;
+int mem_depth = 300;
+int xscale = 10;
 int yscale = 100;
 int channelOffset = 150;
 
@@ -161,25 +161,17 @@ int main () {
 
 // gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
 
-int graphChannels(int channel[][5000], int finalIndex) {
-	static int testOffset = 0;
+int graphChannels(int channel[][5000], int finalIndex) {	
 	int curChan = 0;
 	int HPixel1 = 0;
 	while (curChan < nchannels) {
-		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
-		// potData = 255;
-		// Stroke(potData, 0, 0, 1);
-		// testOffset++;
-		channelOffset = 150 + mySignal.potData + testOffset;
-		char test[10];
-		sprintf(test, "%d", channelOffset);
-		Fill(255, 255, 255, 1);	
-		TextMid(100, 100, test, SerifTypeface, 50);
+		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);		
+		channelOffset = 150;		
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
-			Line(HPixel1*xscale,
-				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan,
-				HPixel1*xscale + xscale,
-				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan);
+			Line(HPixel1*xscale, // X1
+				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, // Y1
+				HPixel1*xscale + xscale, // X2
+				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan); // Y2
 				
 			if (channel[curChan][finalIndex - mem_depth/2 + HPixel1] != channel[curChan][finalIndex - mem_depth/2 + HPixel1 - 1]) {
 				// A transition was made, add a vertical line
@@ -191,6 +183,8 @@ int graphChannels(int channel[][5000], int finalIndex) {
 		}
 		curChan++;
 	}
+	// Create a trigger line
+	Line(xscale*mem_depth/2, 0, xscale*mem_depth/2, 1200);
 	return 0;
 }
 
