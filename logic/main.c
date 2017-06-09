@@ -28,8 +28,8 @@ int graphChannels(int channel[][5000], int finalIndex);
 
 int nchannels = 8;
 int trigger_dir = 1; // 1 is positive, 0 is negative
-int mem_depth = 300;
-int xscale = 10;
+int mem_depth = 1000;
+int xscale = 5;
 int yscale = 100;
 int channelOffset = 150;
 

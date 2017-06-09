@@ -52,7 +52,7 @@ int trigger_slope = 1;
 int trigger_channel = 1;
 int graphPotData = 1;
 
-#define TRIGGER_LEVEL 150 // 0-256, please
+#define TRIGGER_LEVEL 50 // 0-256, please
 
 #define BAUDRATE B115200 // UART speed
 
