@@ -129,14 +129,13 @@ int main () {
 
 	while (1) {
 		graphSetup(width, height, xscale, yscale, trigger_channel, trigger_slope, trigger_level, mode, nchannels);
-		for (HPixel1 = 0; HPixel1 < 1920; HPixel1 = HPixel1 + xscale * 5) { // HPixel1 * xscale < 1920?
-
+		for (HPixel1 = 0; HPixel1 < 1920; HPixel1 = HPixel1 + xscale * 5) { // HPixel1 * xscale < 1920?			
 			// Walk across the screen, reading bytes and drawing data
 			while (rcount < sizeof(mySignal)) {
 				read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
 				rcount += read_bytes;
 			}
-			rcount = 0;
+			rcount = 0;			
 			
 			// Draw the first channel
 			Line(HPixel1, 
@@ -149,9 +148,9 @@ int main () {
 				Stroke(0, 255, 0, 1); // Green line for second graph
 				
 				Line(HPixel1, 
-					myOldSignal.signal2 + signalOneOffset, 
+					myOldSignal.signal2 + signalOneOffset + 100, 
 					HPixel1 + xscale * 5, 
-					mySignal.signal2 + signalOneOffset);
+					mySignal.signal2 + signalOneOffset + 100);
 					
 				Stroke(255, 0, 0, 1); // Red line for graph
 			}
