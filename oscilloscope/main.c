@@ -52,6 +52,8 @@ int trigger_slope = 1;
 int trigger_channel = 1;
 int graphPotData = 1;
 
+#define TRIGGER_LEVEL 150 // 0-256, please
+
 #define BAUDRATE B115200 // UART speed
 
 struct signal {
@@ -138,26 +140,29 @@ int main () {
 			}
 			rcount = 0;
 			
-			// Draw the first channel
-			Line(HPixel1,
-				myOldSignal.signal1 + 100,
-				HPixel1 + xscale,
-				(mySignal.signal1 + 100));
-			
-			if (nchannels == 2) {
-				// Draw the second channel
-				Stroke(0, 255, 0, 1); // Green line for second graph
-				
+			if (HPixel1 != 0 || mode == 1 || mySignal.signal1 > TRIGGER_LEVEL) {
+				// Draw the first channel
 				Line(HPixel1,
-					myOldSignal.signal2 + signalOneOffset + graphPotData,
+					myOldSignal.signal1 + 100,
 					HPixel1 + xscale,
-					(mySignal.signal2 + signalOneOffset + graphPotData));
+					mySignal.signal1 + 100);
+				
+				if (nchannels == 2) {
+					// Draw the second channel
+					Stroke(0, 255, 0, 1); // Green line for second graph
 					
-				Stroke(255, 0, 0, 1); // Red line for graph
-			}
-			// prevRxData = rxData;
-			myOldSignal.signal1 = mySignal.signal1;
-			myOldSignal.signal2 = mySignal.signal2;
+					Line(HPixel1,
+						myOldSignal.signal2 + signalOneOffset + graphPotData,
+						HPixel1 + xscale,
+						mySignal.signal2 + signalOneOffset + graphPotData);
+						
+					Stroke(255, 0, 0, 1); // Red line for graph
+				}				
+				myOldSignal.signal1 = mySignal.signal1;
+				myOldSignal.signal2 = mySignal.signal2;
+			} else {
+				break;
+			}				
 		}
 		graphPotData = mySignal.potData;
 		End(); // End the picture
