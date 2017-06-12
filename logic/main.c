@@ -24,24 +24,29 @@ int detectCommand(char* command);
 
 int graphSetup(int width, int height, int xscale, int trigger_dir);
 
-int graphChannels(int channel[][5000]);
+int graphChannels(int channel[][5000], int finalIndex);
 
-int nchannels = 1;
+int nchannels = 8;
 int trigger_dir = 1; // 1 is positive, 0 is negative
-int mem_depth = 5000;
-int xscale = 50;
+int mem_depth = 1000;
+int xscale = 5;
 int yscale = 100;
 int channelOffset = 150;
+
+struct signal {
+	uint8_t signal; // 8 bit number consisting of the 8 channels combined into a number
+	uint8_t potData; // pot data fed into 8 bit ADC
+};
+
+struct signal mySignal;
 
 int main () {
 	
 	// UART set up
 	struct termios serial; // Structure to contain UART parameters
 	
-	char* dev_id = "/dev/serial0"; // UART device identifier    
-    uint8_t rxData = 0; // Receive data    
+	char* dev_id = "/dev/serial0"; // UART device identifier        
     int read_bytes = 0;    
-    int HPixel1 = 0;
     
     printf("Opening %s\n", dev_id);
     int fd = open(dev_id, O_RDWR | O_NOCTTY | O_NDELAY);
@@ -50,7 +55,7 @@ int main () {
         perror(dev_id);
         return -1;
     }
-
+    
     // Get UART configuration
     if (tcgetattr(fd, &serial) < 0) {
         perror("Getting configuration");
@@ -68,114 +73,128 @@ int main () {
     serial.c_cc[VTIME] = 0; // 0 for Nonblocking mode
 
     // Set the parameters by writing the configuration
-    tcsetattr(fd, TCSANOW, &serial); 
+    tcsetattr(fd, TCSANOW, &serial); 	
+		
+	int channel[8][5000];
+	char s[3];
+	char inputFromUser[MAX_INPUT];
+	int rcount = 0;
+		
+	 mySignal.potData = 1;
+	int k;	
+	//for (k = 0; k < 1000; k++) {
+		//while (rcount < sizeof(mySignal)) {
+			//read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+			//rcount += read_bytes;
+		//}
+		//rcount = 0;
+		//printf("%d, %d\n", mySignal.signal, mySignal.potData);
+	//}
 	
 	printf("Welcome to Daniel Hunter's Logic Analyzer!\n");
 	printf("Please enter any desired commands, or enter run to begin.\n");
 	
-	int commandCode = 0;	
-	int channel[8][5000];
-	int prevChannelData = 0;
-	char s[3];
-	char inputFromUser[MAX_INPUT];
-	
 	do {
-		fgets(inputFromUser, MAX_INPUT - 1, stdin);
-		commandCode = detectCommand(inputFromUser);
-	} while (commandCode != 7);
+		fgets(inputFromUser, MAX_INPUT - 1, stdin);	
+	} while (detectCommand(inputFromUser) != 7);
 	
 	int width, height;
 	init(&width, &height);
-	wiringPiSetup();
-	pinMode(0, INPUT);
-	
-	//for (i = 0; i < 5000; i++) {
-		//channel[0][i] = i%2;
-		//channel[1][i] = i%2;
-		//channel[2][i] = i%2;
-	//}
-	
-	//channel[0][0] = 0;
-	//channel[0][1] = 0;
-	//channel[0][2] = 0;
-	//channel[0][3] = 1;
-	//channel[0][4] = 1;
-	//channel[0][5] = 1;
-	//channel[0][6] = 1;
 	
 	int i = 0;
 	int j = 0;
 	int doneFlag = 0;
+	int triggeredFlag = 0;
 	int finalIndex = 0;
+	int master_data_counter = 0;
+	
 	while(1) {
-		// Get a byte
-		do {
-			read_bytes = read(fd, &rxData, 1);
-		} while (read_bytes < 1);
+		// Receive the struct
+		while (rcount < sizeof(mySignal)) {
+			read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+			rcount += read_bytes;
+		}
+		rcount = 0;
+		master_data_counter++;	
 		
-		// Store the byte as bits
-		channel[0][i] = (rxData & 0x80) ? 1 : 0; // [0] is MSB. so compare to 1000 0000
-		channel[1][i] = (rxData & 0x40) ? 1 : 0;
-		channel[2][i] = (rxData & 0x20) ? 1 : 0;
-		channel[3][i] = (rxData & 0x10) ? 1 : 0;
-		
-		channel[4][i] = (rxData & 0x08) ? 1 : 0;
-		channel[5][i] = (rxData & 0x04) ? 1 : 0;
-		channel[6][i] = (rxData & 0x02) ? 1 : 0;
-		channel[7][i] = (rxData & 0x01) ? 1 : 0;
-		
-		i++; 
-		i = i % mem_depth; // walk through the array, rolling over at mem_depth
-		
-		if (channel[0][i] && channel[1][i]) { // Trigger condition checker
-			doneFlag = 1;
-		}			
-		if (doneFlag) {
-			j++;
-			if (j >= mem_depth/2) { // Save half of memory depth samples to display
-				finalIndex = i; // Save where we stopped to graph it later
-				break;
+		if (!doneFlag) {				
+			// Store the byte as bits
+			channel[0][i] = (mySignal.signal & 0x80) ? 1 : 0; // [0] is MSB. so compare to 1000 0000
+			channel[1][i] = (mySignal.signal & 0x40) ? 1 : 0;
+			channel[2][i] = (mySignal.signal & 0x20) ? 1 : 0;
+			channel[3][i] = (mySignal.signal & 0x10) ? 1 : 0;
+
+			channel[4][i] = (mySignal.signal & 0x08) ? 1 : 0;
+			channel[5][i] = (mySignal.signal & 0x04) ? 1 : 0;
+			channel[6][i] = (mySignal.signal & 0x02) ? 1 : 0;
+			channel[7][i] = (mySignal.signal & 0x01) ? 1 : 0;
+			
+			if (channel[0][i]) { // Trigger condition checker
+				triggeredFlag = 1;
+			}
+
+			i++;
+			i = i % mem_depth; // Walk through the array, rolling over at mem_depth
+
+			if (triggeredFlag) {
+				j++;
+				if (j >= mem_depth/2) { // Save half of memory depth samples to display
+					finalIndex = i; // Save where we stopped to graph it later
+					doneFlag = 1;
+				}
+			}
+		} else { // The analyzer has been triggered and the data is saved in the array, graph it based on potData
+			if (master_data_counter > 200) {	
+				graphSetup(width, height, xscale, trigger_dir);
+				graphChannels(channel, finalIndex);
+				End();
+				master_data_counter = 0;
 			}
 		}
 	}
-	
-	while(1) {
-		// Set up the graph
-		graphSetup(width, height, xscale, trigger_dir);
-		graphChannels(channel);		
-		End();
-	}
-	
+
 	fgets(s, 2, stdin); // look at the pic, end with [RETURN]
 	finish(); // Graphics cleanup
 	exit(0);
-	
 }
 
-// gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes -lwiringPi
+// gcc -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads main.c -o main -lshapes
 
-graphChannels(int channel[][5000]) {
+int graphChannels(int channel[][5000], int finalIndex) {
 	int curChan = 0;
 	int HPixel1 = 0;
-	while (curChan < nchannels) {		
+	while (curChan < nchannels) {
+		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
+		channelOffset = 150;
 		for (HPixel1 = 0; HPixel1 * xscale < 1920; HPixel1++) {
-			Line(HPixel1*xscale, channel[curChan][HPixel1]*yscale + channelOffset*curChan, HPixel1*xscale + xscale, channel[curChan][HPixel1]*yscale + channelOffset*curChan);
-			if (channel[curChan][HPixel1] != channel[curChan][HPixel1 - 1]) {
+			Line(HPixel1*xscale, // X1
+				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan, // Y1
+				HPixel1*xscale + xscale, // X2
+				channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan); // Y2
+
+			if (channel[curChan][finalIndex - mem_depth/2 + HPixel1] != channel[curChan][finalIndex - mem_depth/2 + HPixel1 - 1]) {
 				// A transition was made, add a vertical line
-				Line(HPixel1*xscale, channel[curChan][HPixel1]*yscale + channelOffset*curChan, HPixel1*xscale, channel[curChan][HPixel1-1]*yscale + channelOffset*curChan);
+				Line(HPixel1*xscale,
+					channel[curChan][finalIndex - mem_depth/2 + HPixel1]*yscale + channelOffset*curChan,
+					HPixel1*xscale,
+					channel[curChan][finalIndex - mem_depth/2 + HPixel1-1]*yscale + channelOffset*curChan);
 			}
 		}
-		Stroke((rand() % 128) + 128, (rand() % 128) + 128, (rand() % 128) + 128, 1);
 		curChan++;
-	}	
+	}
+	// Create a trigger line
+	Line(xscale*mem_depth/2, 0, xscale*mem_depth/2, 1200);
 	return 0;
 }
 
-graphSetup(width, height, xscale, trigger_dir) {
+int graphSetup(width, height, xscale, trigger_dir) {
 	int i;
 	char strToPrint[MAX_INPUT];	
+	int textHeight = 10;
+	int textSize = 20;
+	int textOffset = 120;
 
-	Start(width, height); // Start the picture
+	Start(width, height);
 	Background(0, 0, 0); // Black background
 	
 	Stroke(255, 255, 255, .5);
@@ -189,11 +208,34 @@ graphSetup(width, height, xscale, trigger_dir) {
 		Line(0, i, 1920, i);
 	}
 	
-	Stroke(255, 0, 0, 1); // Red line for graph
+	Fill(255, 255, 255, 1); // Set the fill to be fully white for the text
+	sprintf(strToPrint, "Channel 1", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);	
+	textHeight = 125;
+	sprintf(strToPrint, "Channel 2", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight = 275;
+	sprintf(strToPrint, "Channel 3", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 4", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 5", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 6", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 7", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
+	textHeight += 150;
+	sprintf(strToPrint, "Channel 8", xscale);
+	TextMid(75, textHeight, strToPrint, SerifTypeface, textSize);
 	return 0;
 }
 
-detectCommand(char* command) {	
+int detectCommand(char* command) {	
 	
 	if (strstr(command, "nchannels") != NULL) {
 		if (strstr(command, "1") != NULL) {

@@ -45,13 +45,25 @@ int graphSetup(int width, int height, int xscale, int yscale, int trigger_channe
 
 int nchannels = 1;
 int mode = 1; // 1 is free_run, 2 is trigger
-int xscale = 1;
-int yscale = 1;
+int xscale = 50;
+int yscale = 2;
 int trigger_level = 1;
 int trigger_slope = 1;
 int trigger_channel = 1;
+int graphPotData = 1;
+
+#define TRIGGER_LEVEL 50 // 0-256, please
 
 #define BAUDRATE B115200 // UART speed
+
+struct signal {
+	uint8_t signal1;
+	uint8_t signal2;
+	uint8_t potData; // pot data fed into 8 bit ADC
+};
+
+struct signal mySignal;
+struct signal myOldSignal;
 
 int main () {
 
@@ -95,9 +107,9 @@ int main () {
 	// Begin taking user input
 	char s[3];
 	int commandCode = 0;
-	int signalOneOffset = 500;
-	int channelSelect = 0;
+	int signalOneOffset = 500;	
 	char inputFromUser[MAX_INPUT];
+	int rcount = 0;
 
 	printf("Welcome to Daniel Hunter's O'Scope!\n");
 	printf("Please enter any desired commands, or enter start to begin.\n");
@@ -120,27 +132,39 @@ int main () {
 
 	while (1) {
 		graphSetup(width, height, xscale, yscale, trigger_channel, trigger_slope, trigger_level, mode, nchannels);
-		for (HPixel1 = 0; HPixel1 < 1920; HPixel1 = HPixel1 + xscale * 5) {
-
+		for (HPixel1 = 0; HPixel1 < 1920; HPixel1 = HPixel1 + xscale) { // HPixel1 * xscale < 1920?
 			// Walk across the screen, reading bytes and drawing data
-			do {
-				read_bytes = read(fd, &rxData, 1);
-			} while (read_bytes < 1);
-
-			// Select which channel to use
-			if (nchannels == 2 && channelSelect || nchannels == 1) {
-				// Draw the first channel
-				Line(HPixel1, prevRxData + signalOneOffset, HPixel1 + xscale * 5, rxData + signalOneOffset);
-				channelSelect = 0;
-			} else if (nchannels == 2 && !channelSelect) {
-				// Draw the second channel
-				Line(HPixel1, prevRxData + signalOneOffset, HPixel1 + xscale * 5, rxData + signalOneOffset);
-				channelSelect = 1;
+			while (rcount < sizeof(mySignal)) {
+				read_bytes = read(fd, &mySignal, sizeof(mySignal)-rcount);
+				rcount += read_bytes;
 			}
-
-			prevRxData = rxData;
-
+			rcount = 0;
+			
+			if (HPixel1 != 0 || mode == 1 || mySignal.signal1 > TRIGGER_LEVEL) {
+				// Draw the first channel
+				Line(HPixel1,
+					myOldSignal.signal1 + 100,
+					HPixel1 + xscale,
+					mySignal.signal1 + 100);
+				
+				if (nchannels == 2) {
+					// Draw the second channel
+					Stroke(0, 255, 0, 1); // Green line for second graph
+					
+					Line(HPixel1,
+						myOldSignal.signal2 + signalOneOffset + graphPotData,
+						HPixel1 + xscale,
+						mySignal.signal2 + signalOneOffset + graphPotData);
+						
+					Stroke(255, 0, 0, 1); // Red line for graph
+				}				
+				myOldSignal.signal1 = mySignal.signal1;
+				myOldSignal.signal2 = mySignal.signal2;
+			} else {
+				break;
+			}				
 		}
+		graphPotData = mySignal.potData;
 		End(); // End the picture
 	}
 
@@ -204,7 +228,6 @@ graphSetup(width, height, xscale, yscale, trigger_channel, trigger_slope, trigge
 	Stroke(255, 0, 0, 1); // Red line for graph
 
 	return 0;
-
 }
 
 int detectCommand(char* command) {
@@ -298,6 +321,9 @@ int detectCommand(char* command) {
 		} else if (strstr(command, "10") != NULL) {
 			printf("Set xscale to 10\n");
 			xscale = 10;
+		} else if (strstr(command, "5") != NULL) {
+			printf("Set xscale to 5\n");
+			xscale = 5;
 		} else if (strstr(command, "1") != NULL) {
 			printf("Set xscale to 1\n");
 			xscale = 1;
